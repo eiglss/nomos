@@ -1,4 +1,4 @@
-#import "nomos.typ": *
+#import "@preview/nomos:0.1.0": *
 
 = Nomos package
 

@@ -108,7 +108,7 @@ This function generates a table containing all the variables registered with `#a
 The following example demonstrates nearly all functions provided by the package in a single document.
 
 ```typst
-#import "nomos.typ": *
+#import "@preview/nomos:0.1.0": *
 
 = Nomos package
 
