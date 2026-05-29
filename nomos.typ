@@ -85,13 +85,24 @@
 ///
 /// - symb (str, content): The registered symbol.
 /// - clickable (bool): Set to `true` (default) to make the symbol a hyperlink to the table.
-#let ncl(symb, clickable: true) = box([
-    #if clickable {
-        link(label("nomos-" + repr(symb)), symb)
+#let ncl(symb, clickable: true) = {
+  // If the symbol is a math block, don't wrap it in a box layout container.
+  // This allows Typst math to calculate baseline/fraction layouts properly.
+  if type(symb) == content and symb.func() == math.equation {
+    if clickable {
+      link(label("nomos-" + repr(symb)), symb)
     } else {
-        symb
+      symb
     }
-])
+  } else {
+    // Keep the box behavior for plain text strings to prevent weird line breaks
+    box(if clickable {
+      link(label("nomos-" + repr(symb)), symb)
+    } else {
+      symb
+    })
+  }
+}
 
 /// Returns the **description** of the symbol.
 ///
