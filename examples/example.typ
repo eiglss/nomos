@@ -15,13 +15,13 @@
     unit: "Unit",
     domain: "Domain",
     sections: none,
-    sort: true,
+    sort: "symb",
 ) // Reseting some parameters to default value to expose them all
 
 ---
 
 == Newton's Law
-The relationship between the Earth and the Moon is governed by Newton's Law of Universal Gravitation. It posits that the gravitational force (#add-ncl($F$, "Gravitational force", unit: $"N"$, domain: $RR_(>=0)$, sec: "Latin")) between two bodies is proportional to the product of their masses and inversely proportional to the square of the distance between them. Since its a force, #ncl($F$) is express in #ncl-u($F$).
+The relationship between the Earth and the Moon is governed by Newton's Law of Universal Gravitation. It posits that the gravitational force (#add-ncl($F$, "Gravitational force", unit: $"N"$, domain: $RR_(>=0)$, sec: "Latin", sort-key: "F")) between two bodies is proportional to the product of their masses and inversely proportional to the square of the distance between them. Since its a force, #ncl($F$) is express in #ncl-u($F$).
 
 === The Formula
 The central equation for this interaction is:
@@ -31,10 +31,11 @@ The central equation for this interaction is:
     value: $6.67430 times 10^(-11)$,
     unit: $"m"^3 "kg"^(-1) "s"^(-2)$,
     sec: "Latin",
+    sort-key: "G",
 )
-#add-ncl-silent($m_1$, "Mass of body 1", unit: $"kg"$, domain: $RR_(>=0)$, sec: "Latin")
-#add-ncl-silent($m_2$, "Mass of body 2", unit: $"kg"$, domain: $RR_(>=0)$, sec: "Latin")
-#add-ncl-silent($r$, "Distance between the centers of the masses", unit: $"m"$, domain: $RR_(>0)$, sec: "Latin")
+#add-ncl-silent($m_1$, "Mass of body 1", unit: $"kg"$, domain: $RR_(>=0)$, sec: "Latin", sort-key: "m1")
+#add-ncl-silent($m_2$, "Mass of body 2", unit: $"kg"$, domain: $RR_(>=0)$, sec: "Latin", sort-key: "m2")
+#add-ncl-silent($r$, "Distance between the centers of the masses", unit: $"m"$, domain: $RR_(>0)$, sec: "Latin", sort-key: "r")
 
 $ #ncl($F$) = #ncl($G$) (#ncl($m_1$) #ncl($m_2$)) / #ncl($r$)^2 $ // Clikable symbole
 
@@ -46,8 +47,8 @@ Where:
 - #ncl($r$) is the #ncl-dl($r$) expressed in #ncl-u($r$) in #ncl-dm($r$).
 
 == Gravity at the Local Level
-The potential energy or the force acting on an object is the gravitational potential (#add-ncl($Phi$, "Gravitational potential", unit: $"J" "kg"^(-1)$, domain: $RR_(<=0)$, sec: "Greek")) given by:
-#add-ncl-silent($M$, "Mass of the larger body", unit: $"kg"$, domain: $RR_(>=0)$, sec: "Latin")
+The potential energy or the force acting on an object is the gravitational potential (#add-ncl($Phi$, "Gravitational potential", unit: $"J" "kg"^(-1)$, domain: $RR_(<=0)$, sec: "Greek", sort-key: "Phi")) given by:
+#add-ncl-silent($M$, "Mass of the larger body", unit: $"kg"$, domain: $RR_(>=0)$, sec: "Latin", sort-key: "M")
 
 $ #ncl($Phi$) = -frac(#ncl($G$) #ncl($M$), #ncl($r$)) $ // Clikable symbole
 

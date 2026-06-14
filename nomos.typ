@@ -8,7 +8,7 @@
 // -----------------------------------------------------------------------------
 
 // Internal function to register metadata
-#let _register(symb, description, value, unit, domain, sec) = [
+#let _register(symb, description, value, unit, domain, sec, sort_key) = [
     #metadata((
         symb: symb,
         description: description,
@@ -16,6 +16,7 @@
         unit: unit,
         domain: domain,
         section: sec,
+        sort_key: sort_key,
     )) <nomos-entry>
 ]
 
@@ -42,6 +43,7 @@
 /// - domain (none, str, content): The domain of definition for the symbol (e.g., `"$RR^+$"`). Defaults to `none`.
 /// - sec (none, str): The section name used to categorize the variable in the printed nomenclature. For example, setting this to `"Latin"` will group the variable under a `"Latin"` heading. If set to `none` (default), the variable will be listed without a specific section header.
 /// - clickable (bool): Creates a clickable link to the nomenclature index if `clickable` is set to `true`. Defaults to `true`.
+/// - sort-key (none, str): A plain string used as the sort key when `sort: "symb"` is set in `#print-nomenclature`. Useful for subscripted symbols (e.g., `sort-key: "m1"` for `$m_1$`). Defaults to `none`, which falls back to an internal string representation of the symbol.
 #let add-ncl(
     symb,
     description,
@@ -50,8 +52,9 @@
     domain: none,
     sec: none,
     clickable: true,
+    sort-key: none,
 ) = {
-    box(_register(symb, description, value, unit, domain, sec)) // in box to avoid adding extra space in the function return
+    box(_register(symb, description, value, unit, domain, sec, sort-key)) // in box to avoid adding extra space in the function return
     if clickable {
         link(label("nomos-" + repr(symb)), symb)
     } else {
@@ -67,6 +70,7 @@
 /// - unit (none, str, content): The unit of measurement for the symbol. Defaults to `none`.
 /// - domain (none, str, content): The domain of definition for the symbol (e.g., `"$RR^+$"`). Defaults to `none`.
 /// - sec (none, str): The section name used to categorize the variable in the printed nomenclature. For example, setting this to `"Latin"` will group the variable under a `"Latin"` heading. If set to `none` (default), the variable will be listed without a specific section header.
+/// - sort-key (none, str): A plain string used as the sort key when `sort: "symb"` is set in `#print-nomenclature`. Useful for subscripted symbols (e.g., `sort-key: "m1"` for `$m_1$`). Defaults to `none`, which falls back to an internal string representation of the symbol.
 #let add-ncl-silent(
     symb,
     description,
@@ -74,8 +78,9 @@
     unit: none,
     domain: none,
     sec: none,
+    sort-key: none,
 ) = {
-    box(_register(symb, description, value, unit, domain, sec)) // in box to avoid adding extra space in the function return
+    box(_register(symb, description, value, unit, domain, sec, sort-key)) // in box to avoid adding extra space in the function return
 }
 
 /// Standard Reference: Displays the symbol and creates a clickable link to the nomenclature index if `clickable` is set to `true`.
@@ -145,7 +150,7 @@
 /// - numbering (str, none): Defines the numbering style for the heading (e.g., `"1.1"`). Set to none (default) for an unnumbered heading.
 /// - outlined (bool): Set to `true` to include the nomenclature heading in the document's table of contents (outline), or `false` (default) to exclude it.
 /// - sections (array, none): An `array` of strings defining which sections to print and in what order (e.g., `("Latin", "Greek")`). You can include `none` in the array to specify exactly where un-sectioned variables should appear. If set to `none` (default), the package will automatically detect and print all unique sections found in the document.
-/// - sort (bool): Set to `true` to sort symbols alphabetically by description within each section. Defaults to `false` (document order).
+/// - sort (bool, str): Controls the order of entries within each section. Set to `false` (default) to keep document order, `"description"` to sort alphabetically by description, or `"symb"` to sort alphabetically by symbol.
 #let print-nomenclature(
     symb: true,
     description: true,
@@ -215,11 +220,17 @@
             // 2. Filter entries for this section and optionally sort them
             #let section-entries = {
                 let filtered = entries.filter(e => e.value.section == section)
-                if sort {
+                if sort == "description" {
                     filtered.sorted(key: e => {
                         let d = e.value.description
                         if type(d) == str { lower(d) } else { repr(d) }
                     })
+                } else if sort == "symb" {
+                    filtered.sorted(key: e => {
+                        if e.value.sort_key != none { lower(e.value.sort_key) } else { repr(e.value.symb) }
+                    })
+                } else if sort != false {
+                    panic("nomos: sort must be false, \"description\", or \"symb\".")
                 } else {
                     filtered
                 }
