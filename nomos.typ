@@ -7,9 +7,6 @@
 // Link:    https://github.com/eiglss/nomos
 // -----------------------------------------------------------------------------
 
-// State to track if a symbol has been displayed yet (for first-occurrence expansion)
-#let _nomos-usage = state("nomos-usage", (:))
-
 // Internal function to register metadata
 #let _register(symb, description, value, unit, domain, sec) = [
     #metadata((
@@ -148,6 +145,7 @@
 /// - numbering (str, none): Defines the numbering style for the heading (e.g., `"1.1"`). Set to none (default) for an unnumbered heading.
 /// - outlined (bool): Set to `true` to include the nomenclature heading in the document's table of contents (outline), or `false` (default) to exclude it.
 /// - sections (array, none): An `array` of strings defining which sections to print and in what order (e.g., `("Latin", "Greek")`). You can include `none` in the array to specify exactly where un-sectioned variables should appear. If set to `none` (default), the package will automatically detect and print all unique sections found in the document.
+/// - sort (bool): Set to `true` to sort symbols alphabetically by description within each section. Defaults to `false` (document order).
 #let print-nomenclature(
     symb: true,
     description: true,
@@ -159,12 +157,26 @@
     numbering: none,
     outlined: false,
     sections: none,
+    sort: false,
 ) = {
     if title != "" {
         heading(depth: depth, numbering: numbering, outlined: outlined)[#title]
     }
     context {
         let entries = query(label("nomos-entry"))
+
+        // Deduplicate by symbol repr, keeping first occurrence
+        let seen = ()
+        let unique-entries = ()
+        for entry in entries {
+            let key = repr(entry.value.symb)
+            if key not in seen {
+                seen.push(key)
+                unique-entries.push(entry)
+            }
+        }
+        let entries = unique-entries
+
         let active-sections = if sections == none {
             entries.map(e => e.value.section).dedup()
         } else {
@@ -172,7 +184,7 @@
         }
         for section in active-sections {
             if section not in entries.map(e => e.value.section).dedup() {
-                panic(section + " not registered.")
+                panic("nomos: Section " + repr(section) + " not registered.")
             }
         }
 
@@ -200,8 +212,18 @@
                 heading(depth: depth + 1, numbering: none, outlined: false)[#section]
             }
 
-            // 2. Filter the entries so this table only shows symbols for this section!
-            #let section-entries = entries.filter(e => e.value.section == section)
+            // 2. Filter entries for this section and optionally sort them
+            #let section-entries = {
+                let filtered = entries.filter(e => e.value.section == section)
+                if sort {
+                    filtered.sorted(key: e => {
+                        let d = e.value.description
+                        if type(d) == str { lower(d) } else { repr(d) }
+                    })
+                } else {
+                    filtered
+                }
+            }
 
             // 3. Draw the table
             #table(

@@ -1,4 +1,4 @@
-#import "nomos.typ": *
+#import "../nomos.typ": *
 
 = Nomos package
 
@@ -15,6 +15,7 @@
     unit: "Unit",
     domain: "Domain",
     sections: none,
+    sort: true,
 ) // Reseting some parameters to default value to expose them all
 
 ---

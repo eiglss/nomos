@@ -88,6 +88,7 @@ You can print the nomenclature anywhere in your document—even before the symbo
     numbering: none,
     outlined: false,
     sections: none,
+    sort: false,
 )
 ```
 
@@ -103,6 +104,7 @@ This function generates a table containing all the variables registered with `#a
 * `numbering`: Defines the numbering style for the heading (e.g., "1.1"). Set to none (default) for an unnumbered heading.
 * `outlined`: Set to `true` to include the nomenclature heading in the document's table of contents (outline), or `false` (default) to exclude it.
 * `sections`: An `array` of strings defining which sections to print and in what order (e.g., `("Latin", "Greek")`). You can include `none` in the array to specify exactly where un-sectioned variables should appear. If set to `none` (default), the package will automatically detect and print all unique sections found in the document.
+* `sort`: Set to `true` to sort symbols alphabetically by description within each section. Defaults to `false` (document order).
 
 ## Comprehensive Walkthrough
 The following comprehensive example showcases almost all features and functions provided by this package in a single document. You can view the pre-compiled PDF version [here](https://raw.githubusercontent.com/eiglss/nomos/main/examples/example.pdf).
@@ -125,6 +127,7 @@ The following comprehensive example showcases almost all features and functions 
     unit: "Unit",
     domain: "Domain",
     sections: none,
+    sort: true,
 ) // Reseting some parameters to default value to expose them all
 
 ---
