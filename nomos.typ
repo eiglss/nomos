@@ -80,7 +80,11 @@
     sec: none,
     sort-key: none,
 ) = {
-    box(_register(symb, description, value, unit, domain, sec, sort-key)) // in box to avoid adding extra space in the function return
+    _register(symb, description, value, unit, domain, sec, sort-key)
+    // Return an out-of-flow, empty style modifier block. 
+    // This has a physical size of absolutely zero and prevents Typst from 
+    // thinking a text paragraph has begun or that a space should be inserted.
+    [#{} ]
 }
 
 /// Standard Reference: Displays the symbol and creates a clickable link to the nomenclature index if `clickable` is set to `true`.
