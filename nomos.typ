@@ -7,7 +7,25 @@
 // Link:    https://github.com/eiglss/nomos
 // -----------------------------------------------------------------------------
 
-// Internal function to register metadata
+// Normalised comparison key: strips whitespace from repr() so compact vs.
+// multiline repr differences (which vary by context) never cause mismatches.
+#let _ncl-key(symb) = repr(symb).replace(regex("\s+"), "")
+
+// Short label string used as the Typst label name for a symbol.
+// Strips the equation(block:false,body:...) wrapper so the label reads
+// "nomos-[B]" instead of "nomos-equation(block: false, body: [B])",
+// which makes Typst's own error messages far more readable.
+#let _ncl-label(symb) = {
+    let k = _ncl-key(symb)
+    let prefix = "equation(block:false,body:"
+    if k.starts-with(prefix) and k.ends-with(")") {
+        k.slice(prefix.len(), k.len() - 1)
+    } else {
+        k
+    }
+}
+
+// Internal function to register metadata.
 #let _register(symb, description, value, unit, domain, sec, sort_key) = [
     #metadata((
         symb: symb,
@@ -56,7 +74,7 @@
 ) = {
     box(_register(symb, description, value, unit, domain, sec, sort-key)) // in box to avoid adding extra space in the function return
     if clickable {
-        link(label("nomos-" + repr(symb)), symb)
+        link(label("nomos-" + _ncl-label(symb)), symb)
     } else {
         symb
     }
@@ -84,7 +102,7 @@
     // Return an out-of-flow, empty style modifier block. 
     // This has a physical size of absolutely zero and prevents Typst from 
     // thinking a text paragraph has begun or that a space should be inserted.
-    [#{} ]
+    [#{}]
 }
 
 /// Standard Reference: Displays the symbol and creates a clickable link to the nomenclature index if `clickable` is set to `true`.
@@ -96,14 +114,14 @@
   // This allows Typst math to calculate baseline/fraction layouts properly.
   if type(symb) == content and symb.func() == math.equation {
     if clickable {
-      link(label("nomos-" + repr(symb)), symb)
+      link(label("nomos-" + _ncl-label(symb)), symb)
     } else {
       symb
     }
   } else {
     // Keep the box behavior for plain text strings to prevent weird line breaks
     box(if clickable {
-      link(label("nomos-" + repr(symb)), symb)
+      link(label("nomos-" + _ncl-label(symb)), symb)
     } else {
       symb
     })
@@ -174,16 +192,33 @@
     context {
         let entries = query(label("nomos-entry"))
 
-        // Deduplicate by symbol repr, keeping first occurrence
-        let seen = ()
-        let unique-entries = ()
-        for entry in entries {
-            let key = repr(entry.value.symb)
-            if key not in seen {
-                seen.push(key)
-                unique-entries.push(entry)
-            }
+        // All keys, in document order
+        let all-keys = entries.map(e => _ncl-key(e.value.symb))
+
+        // Panic immediately if any symbol is defined more than once.
+        // Labels already exist at their add-ncl call sites, so ncl() links
+        // are unaffected by this panic.
+        let dup-keys = all-keys
+            .filter(k => all-keys.filter(k2 => k2 == k).len() > 1)
+            .dedup()
+        if dup-keys.len() > 0 {
+            let dup-labels = entries
+                .filter(e => dup-keys.contains(_ncl-key(e.value.symb)))
+                .map(e => _ncl-label(e.value.symb))
+                .dedup()
+            panic(
+                "nomos: the following symbols are defined more than once:\n"
+                + dup-labels.map(l => "  " + l).join("\n")
+                + "\nRemove the duplicate #add-ncl or #add-ncl-silent call."
+            )
         }
+
+        // Keep only first occurrence of each key (purely functional — no push())
+        let unique-entries = entries
+            .enumerate()
+            .filter(pair => all-keys.slice(0, pair.first()).find(k => k == all-keys.at(pair.first())) == none)
+            .map(pair => pair.last())
+
         let entries = unique-entries
 
         let active-sections = if sections == none {
@@ -250,7 +285,7 @@
                     let d = entry.value
                     let row = ()
                     if symb != false {
-                        row.push([#link(label("nomos-" + repr(d.symb)), d.symb) #label("nomos-" + repr(d.symb))])
+                        row.push([#d.symb#label("nomos-" + _ncl-label(d.symb))])
                     }
                     if description != false { row.push([#d.description]) }
                     if value != false { row.push([#if d.value != none { d.value }]) }
@@ -263,5 +298,6 @@
             // Add a little bit of vertical space between the tables
             #v(1em)
         ]
+
     }
 }
