@@ -9,9 +9,10 @@ It streamlines technical writing by ensuring that every variable is defined upon
 
 **Nomos** operates differently than standard state-based packages:
 
-* Metadata: Every time you call `#add-ncl` (or `#add-ncl-silent`), the package inserts a metadata element with a specific label.
-* Query: The `#print-nomenclature` function uses a locate and query call to find every instance of that label in the document, regardless of where the function is called.
-* Execution: Because it uses queries, you may notice your document recompiles 2-3 times as Typst calculates the positions and contents of the metadata. This is normal behavior for "time-traveling" elements in Typst.
+* **Registration:** Every call to `#add-ncl` (or `#add-ncl-silent`) inserts a metadata element (queryable via `<nomos-entry>`) and a zero-width anchor that serves as the hyperlink target for `#ncl()`. Clicking a symbol rendered by `#ncl()` jumps to its first definition site in the document.
+* **Query:** `#print-nomenclature` uses `query()` to find every registered entry, regardless of where in the document it is called.
+* **Duplicate detection:** Defining the same symbol twice causes two compile-time errors: Typst's own _"label occurs multiple times"_ (identifying the exact symbol) and a nomos panic listing all duplicates by name. Fix every listed duplicate and the document compiles cleanly.
+* **Execution:** Because it uses queries, you may notice your document recompiles 2–3 times as Typst resolves positions and metadata. This is normal for "time-travelling" elements in Typst.
 
 
 ## Quick Start
@@ -76,7 +77,7 @@ There is also `#add-ncl-silent`, which functions identically to `#add-ncl` but d
 
 
 ### Printing the Nomenclature
-You can print the nomenclature anywhere in your document—even before the symbols have been defined—using the `#print-nomenclature()` function. Thanks to the query-based system, it will automatically find all variables registered later in the document.
+You can print the nomenclature anywhere in your document-even before the symbols have been defined-using the `#print-nomenclature()` function. Thanks to the query-based system, it will automatically find all variables registered later in the document.
 
 ```typst
 #print-nomenclature(
@@ -107,6 +108,47 @@ This function generates a table containing all the variables registered with `#a
 * `outlined`: Set to `true` to include the nomenclature heading in the document's table of contents (outline), or `false` (default) to exclude it.
 * `sections`: An `array` of strings defining which sections to print and in what order (e.g., `("Latin", "Greek")`). You can include `none` in the array to specify exactly where un-sectioned variables should appear. If set to `none` (default), the package will automatically detect and print all unique sections found in the document.
 * `sort`: Controls the order of entries within each section. Set to `false` (default) to keep document order, `"description"` to sort alphabetically by description, or `"symb"` to sort alphabetically by symbol.
+
+## Known Issues
+
+### `#add-ncl` / `#add-ncl-silent` inside `#footnote`
+
+Registering a symbol inside a `#footnote[...]` block is **not supported**. Typst's `query()` does not traverse footnote content when called from the main layout context, so symbols registered inside footnotes are invisible to `#print-nomenclature`. This causes two problems:
+
+1. The anchor label for that symbol is placed inside the footnote, so `#ncl()` will fail to link to it correctly.
+2. Duplicate detection cannot catch a collision between a footnote-registered symbol and a main-text-registered one.
+
+**Workaround:** move all `#add-ncl-silent` calls to the main text flow, immediately before the footnote that uses them:
+
+```typst
+// ✗ Wrong - registration inside footnote
+Some text#footnote[
+    #add-ncl-silent($z$, "Acoustic impedance", ...)
+    The impedance #ncl($z$) is ...
+]
+
+// ✓ Correct - registration in main text, reference inside footnote
+#add-ncl-silent($z$, "Acoustic impedance", ...)
+Some text#footnote[
+    The impedance #ncl($z$) is ...
+]
+```
+
+### Duplicate symbol detection
+
+Defining the same symbol twice triggers **two compile-time errors**:
+
+1. Typst reports _"label occurs multiple times in the document"_ at every `#ncl()` call that references the duplicate symbol. The label name in this message identifies which symbol is duplicated --- for example `nomos-equation(block: false, body: [A])` means `$A$` is duplicated.
+
+2. `#print-nomenclature` panics with a human-readable summary:
+
+   ```
+   nomos: the following symbols are defined more than once:
+     ...
+   Remove the duplicate #add-ncl or #add-ncl-silent call.
+   ```
+
+Fix every listed symbol and both errors disappear.
 
 ## Comprehensive Walkthrough
 The following comprehensive example showcases almost all features and functions provided by this package in a single document. You can view the pre-compiled PDF version [here](https://raw.githubusercontent.com/eiglss/nomos/main/examples/example.pdf).
